@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/NumberPulzzGame.iml" filepath="$PROJECT_DIR$/.idea/NumberPulzzGame.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/NumberPulzzGame.app.unitTest.iml" />
+    </modules>
+  </component>
+</project>
