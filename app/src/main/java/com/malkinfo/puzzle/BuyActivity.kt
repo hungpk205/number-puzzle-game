@@ -1,12 +1,12 @@
 package com.malkinfo.puzzle
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.android.billingclient.api.*
 import com.android.volley.Request
@@ -16,17 +16,19 @@ import com.malkinfo.numberpulzzgame.R
 import com.malkinfo.puzzle.adapter.ProductAdapter
 import org.json.JSONObject
 
+
 class BuyActivity : AppCompatActivity() {
     private var billingClient: BillingClient? = null;
     private var productAdapter: ProductAdapter? = null;
     private lateinit var buttonHome: Button;
+    private lateinit var btnOne: Button;
+    private lateinit var btnFive: Button;
     var recyclerViewProduct: RecyclerView? = null;
     var products: ArrayList<Product> = ArrayList();
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_buy)
-        setup()
 
         billingClient = BillingClient.newBuilder(this)
             .enablePendingPurchases()
@@ -43,6 +45,7 @@ class BuyActivity : AppCompatActivity() {
 
         handleHome();
         connectToGooglePayBilling();
+//        handleButtonBuy();
     }
 
     private fun handleHome() {
@@ -59,11 +62,21 @@ class BuyActivity : AppCompatActivity() {
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 for (purchase in list) {
                     if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && !purchase.isAcknowledged) {
-                        verifyPurchase(purchase)
+//                        verifyPurchase(purchase)
+                        updateSlotPlay(5)
                     }
                 }
             }
         }
+    }
+
+    @SuppressLint("CommitPrefEdits")
+    private fun updateSlotPlay(slotPlay: Int) {
+        val settings = applicationContext.getSharedPreferences("SLOT_PLAY", 0)
+        val editor = settings.edit()
+        val currentSlot = settings.getString("SLOT_PLAY", "1")?.toInt()
+        val newSlot = currentSlot?.plus(slotPlay)
+        editor.putString("SLOT_PLAY", newSlot.toString())
     }
 
     private fun verifyPurchase(purchase: Purchase) {
@@ -84,7 +97,7 @@ class BuyActivity : AppCompatActivity() {
                                 .build()
                         billingClient!!.consumeAsync(
                             consumeParams
-                        ) { billingResult, s ->
+                        ) { billingResult, _ ->
                             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                                 Toast.makeText(activity, "Verified Purchase", Toast.LENGTH_LONG)
                                     .show()
@@ -104,68 +117,75 @@ class BuyActivity : AppCompatActivity() {
                 override fun onBillingServiceDisconnected() {
                     connectToGooglePayBilling()
                 }
-
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        getProductDetails()
+                        handleButtonBuy()
+                        handleButtonBuy2()
                     }
                 }
             }
         )
     }
 
-    private fun getProductDetails() {
-        val productIds: ArrayList<String> = ArrayList();
-        val one = "one_1";
-        val five = "five_5";
-        productIds.add(one);
-        productIds.add(five);
+    private fun handleButtonBuy() {
+        btnOne = findViewById(R.id.one_1);
+        val productId = "one_1";
         val getProductDetailsQuery = SkuDetailsParams
             .newBuilder()
-            .setSkusList(productIds)
+            .setSkusList(listOf(productId))
             .setType(BillingClient.SkuType.INAPP)
             .build()
         val activity: Activity = this
         billingClient?.querySkuDetailsAsync(
-            getProductDetailsQuery,
-            SkuDetailsResponseListener { billingResult, list ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK
-                    && list != null
-                ) {
-                    list.forEach {
-                        val productOnGooglePlay = Product(it.title,  it.price, 5)
-                        products.add(productOnGooglePlay);
-                    }
-                    System.out.println("Products Size: aaaaaaa " + products.size)
-                    productAdapter?.setListTrip(products)
-                    productAdapter?.notifyDataSetChanged()
-//                    val itemNameTxtView = findViewById<TextView>(R.id.txtOneTime)
-//                    val itemPriceButton = findViewById<View>(R.id.btnOneTime) as Button
-//                    val itemInfo = list[0]
-//                    itemNameTxtView.text = itemInfo.title
-//                    println("price: " + itemInfo.price)
-//                    itemPriceButton.text = itemInfo.price
-//                    println("price: " + itemPriceButton.text)
-//                    itemPriceButton.setOnClickListener {
-//                        billingClient.launchBillingFlow(
-//                            activity,
-//                            BillingFlowParams
-//                                .newBuilder()
-//                                .setSkuDetails(itemInfo)
-//                                .build()
-//                        )
-//                    }
+            getProductDetailsQuery
+        ) { billingResult, list ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                && list != null
+            ) {
+                val itemInfo = list[0]
+                btnOne.text = itemInfo.price
+                btnOne.setOnClickListener {
+                    Toast.makeText(this, "btn One clicked", Toast.LENGTH_LONG).show();
+                    billingClient!!.launchBillingFlow(
+                        activity,
+                        BillingFlowParams
+                            .newBuilder()
+                            .setSkuDetails(itemInfo)
+                            .build()
+                    )
                 }
             }
-        )
+        }
     }
-
-    private fun setup() {
-        productAdapter = ProductAdapter()
-        recyclerViewProduct = findViewById(R.id.recycler_view_product);
-        recyclerViewProduct?.setHasFixedSize(true)
-        recyclerViewProduct?.layoutManager = GridLayoutManager(applicationContext, 1)
-        recyclerViewProduct?.adapter = productAdapter;
+    private fun handleButtonBuy2() {
+        btnFive = findViewById(R.id.five_5);
+        val productId = "five_5";
+        val getProductDetailsQuery = SkuDetailsParams
+            .newBuilder()
+            .setSkusList(listOf(productId))
+            .setType(BillingClient.SkuType.INAPP)
+            .build()
+        val activity: Activity = this
+        billingClient?.querySkuDetailsAsync(
+            getProductDetailsQuery
+        ) { billingResult, list ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                && list != null
+            ) {
+                val itemInfo = list[0]
+                btnFive.text = itemInfo.price
+                btnFive.setOnClickListener {
+                    Toast.makeText(this, "btn five clicked", Toast.LENGTH_LONG).show();
+                    billingClient!!.launchBillingFlow(
+                        activity,
+                        BillingFlowParams
+                            .newBuilder()
+                            .setSkuDetails(itemInfo)
+                            .build()
+                    )
+                }
+            }
+        }
     }
 
 }

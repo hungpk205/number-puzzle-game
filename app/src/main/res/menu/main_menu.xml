@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-
+    <item
+        android:title="@string/slot_play"
+        android:id="@+id/slot_play"
+        android:orderInCategory="100"
+        app:showAsAction="always">
+    </item>
     <item
         android:title="@string/new_game"
         android:id="@+id/action_new_game"
