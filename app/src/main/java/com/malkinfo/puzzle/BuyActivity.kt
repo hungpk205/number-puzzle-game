@@ -3,32 +3,29 @@ package com.malkinfo.puzzle
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
-import android.widget.Button
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.RecyclerView
 import com.android.billingclient.api.*
 import com.android.volley.Request
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.malkinfo.numberpulzzgame.R
-import com.malkinfo.puzzle.adapter.ProductAdapter
 import org.json.JSONObject
 
 
 class BuyActivity : AppCompatActivity() {
-    private var billingClient: BillingClient? = null;
-    private var productAdapter: ProductAdapter? = null;
-    private lateinit var buttonHome: Button;
-    private lateinit var btnOne: Button;
-    private lateinit var btnFive: Button;
-    var recyclerViewProduct: RecyclerView? = null;
-    var products: ArrayList<Product> = ArrayList();
+    private var billingClient: BillingClient? = null
+    private lateinit var buttonHome: Button
+    var listViewProduct: ListView? = null
+    var arrayAdapter: ArrayAdapter<String?>? = null
+    var products: ArrayList<Product> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_buy)
+        listViewProduct = findViewById(R.id.list_view_product)
 
         billingClient = BillingClient.newBuilder(this)
             .enablePendingPurchases()
@@ -45,7 +42,15 @@ class BuyActivity : AppCompatActivity() {
 
         handleHome();
         connectToGooglePayBilling();
-//        handleButtonBuy();
+
+        arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, purchaseItemDisplay)
+        listViewProduct!!.adapter = arrayAdapter
+        notifyList()
+        listViewProduct!!.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+            if (billingClient!!.isReady) {
+                initiatePurchase(purchaseItemIDs[position])
+            }
+        }
     }
 
     private fun handleHome() {
@@ -119,71 +124,77 @@ class BuyActivity : AppCompatActivity() {
                 }
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        handleButtonBuy()
-                        handleButtonBuy2()
+
                     }
                 }
             }
         )
     }
 
-    private fun handleButtonBuy() {
-        btnOne = findViewById(R.id.one_1);
-        val productId = "one_1";
-        val getProductDetailsQuery = SkuDetailsParams
-            .newBuilder()
-            .setSkusList(listOf(productId))
-            .setType(BillingClient.SkuType.INAPP)
-            .build()
-        val activity: Activity = this
-        billingClient?.querySkuDetailsAsync(
-            getProductDetailsQuery
-        ) { billingResult, list ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK
-                && list != null
-            ) {
-                val itemInfo = list[0]
-                btnOne.text = itemInfo.price
-                btnOne.setOnClickListener {
-                    Toast.makeText(this, "btn One clicked", Toast.LENGTH_LONG).show();
-                    billingClient!!.launchBillingFlow(
-                        activity,
-                        BillingFlowParams
-                            .newBuilder()
-                            .setSkuDetails(itemInfo)
-                            .build()
-                    )
-                }
+    companion object {
+        const val PREF_FILE = "MyPref"
+
+        //note add unique product ids
+        //use same id for preference key
+        private val purchaseItemIDs: ArrayList<String> = object : ArrayList<String>() {
+            init {
+                add("one_1")
+                add("five_5")
+                add("ten_10")
+                add("twenty_20")
+                add("fifty_50")
+                add("hundred_100")
+                add("twohundred_200")
+                add("fivehundred_500")
             }
         }
+        private val purchaseItemDisplay: ArrayList<String?> = ArrayList<String?>()
     }
-    private fun handleButtonBuy2() {
-        btnFive = findViewById(R.id.five_5);
-        val productId = "five_5";
-        val getProductDetailsQuery = SkuDetailsParams
-            .newBuilder()
-            .setSkusList(listOf(productId))
-            .setType(BillingClient.SkuType.INAPP)
-            .build()
-        val activity: Activity = this
-        billingClient?.querySkuDetailsAsync(
-            getProductDetailsQuery
-        ) { billingResult, list ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK
-                && list != null
-            ) {
-                val itemInfo = list[0]
-                btnFive.text = itemInfo.price
-                btnFive.setOnClickListener {
-                    Toast.makeText(this, "btn five clicked", Toast.LENGTH_LONG).show();
-                    billingClient!!.launchBillingFlow(
-                        activity,
-                        BillingFlowParams
-                            .newBuilder()
-                            .setSkuDetails(itemInfo)
-                            .build()
-                    )
+    private fun notifyList() {
+        purchaseItemDisplay.clear()
+        for (p in purchaseItemIDs) {
+            val xPrice = p.substring(p.indexOf("_") + 1)
+            println(xPrice)
+            purchaseItemDisplay.add("$xPrice for $xPrice times play")
+        }
+        arrayAdapter!!.notifyDataSetChanged()
+    }
+
+    private val preferenceObject: SharedPreferences
+        get() = applicationContext.getSharedPreferences(PREF_FILE, 0)
+    private val preferenceEditObject: SharedPreferences.Editor
+        get() {
+            val pref = applicationContext.getSharedPreferences(PREF_FILE, 0)
+            return pref.edit()
+        }
+    private fun getPurchaseCountValueFromPref(PURCHASE_KEY: String): Int {
+        return preferenceObject.getInt(PURCHASE_KEY, 1)
+    }
+
+    private fun savePurchaseCountValueToPref(PURCHASE_KEY: String, value: Int) {
+        preferenceEditObject.putInt(PURCHASE_KEY, value).commit()
+    }
+
+    private fun initiatePurchase(PRODUCT_ID: String) {
+        val skuList: MutableList<String> = ArrayList()
+        skuList.add(PRODUCT_ID)
+        val params = SkuDetailsParams.newBuilder()
+        params.setSkusList(skuList).setType(BillingClient.SkuType.INAPP)
+        billingClient!!.querySkuDetailsAsync(params.build()
+        ) { billingResult, skuDetailsList ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                if (skuDetailsList != null && skuDetailsList.size > 0) {
+                    val flowParams = BillingFlowParams.newBuilder()
+                        .setSkuDetails(skuDetailsList[0])
+                        .build()
+                    billingClient!!.launchBillingFlow(this, flowParams)
+                } else {
+                    //try to add item/product id "c1" "c2" "c3" inside managed product in google play console
+                    Toast.makeText(applicationContext, "Purchase Item $PRODUCT_ID not Found", Toast.LENGTH_SHORT).show()
                 }
+            } else {
+                Toast.makeText(applicationContext,
+                    " Error " + billingResult.debugMessage, Toast.LENGTH_SHORT).show()
             }
         }
     }

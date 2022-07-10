@@ -12,7 +12,8 @@
         <activity
             android:name="com.malkinfo.puzzle.BuyActivity"
             android:exported="false" />
-        <activity android:name="com.malkinfo.puzzle.MainActivity">
+        <activity android:name="com.malkinfo.puzzle.MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
